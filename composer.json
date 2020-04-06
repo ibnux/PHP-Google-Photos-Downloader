@@ -1,0 +1,9 @@
+{
+    "config": {
+      "sort-packages": true
+    },
+    "minimum-stability":"stable",
+    "require": {
+        "catfan/medoo": "^1.7"
+    }
+  }

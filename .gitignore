@@ -1,0 +1,6 @@
+images/**
+data/**
+!images/.gitkeep
+!data/.gitkeep
+config.php
+vendor
