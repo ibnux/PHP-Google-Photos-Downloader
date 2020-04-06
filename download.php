@@ -69,6 +69,7 @@ foreach ($fotos['mediaItems'] as $data) {
             echo "<img src=\"$filename\" width=\"256\">\n";
         }
         echo "\n";
+        //check duplicate who has same hash
         $data['root_id'] = $db->get('t_photos','id',['hash'=>$data['hash']]);
         $db->insert('t_photos',$data);
     }else{
