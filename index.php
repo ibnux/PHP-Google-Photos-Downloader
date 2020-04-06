@@ -1,6 +1,13 @@
 <?php
 require 'vendor/autoload.php';
 include "config.php";
+
+$max = 50;
+$page = $_GET['p']*1;
+$pageNow = $page*$max;
+$datas = $db->select("t_photos",'*',['LIMIT'=>[$pageNow,$max],'ORDER'=>['date_added'=>'DESC']]);
+$total = $db->count("t_photos");
+$pages = ($total/$max);
 ?>
 <!doctype html>
 <html lang="en">
@@ -19,12 +26,37 @@ include "config.php";
 </head>
 <body>
     <h1>Google Photos</h1>
+    <div>
+        <?php ob_start(); ?>
+        <nav>
+            <ul class="pagination justify-content-center">
+                <?php if($page>0){?>
+                <li class="page-item"><a class="page-link" href="?p=<?=$page-1?>">Previous</a></li>
+                <?php } ?>
+                <li class="page-item">
+                    <form>
+                    <select name="p" class="form-control" onchange="this.form.submit()">
+                <?php
+                for($n=0;$n<$pages;$n++){
+                    if($n==$page)
+                    echo '<option selected value="'.$n.'">'.($n+1).'</option>';
+                    else
+                    echo '<option value="'.$n.'">'.($n+1).'</option>';
+                }
+                ?>
+                </select>
+                </form>
+                <li class="page-item"><a class="page-link" href="?p=<?=$page+1?>">Next</a></li>
+            </ul>
+        </nav>
+        <?php
+        $pagination = ob_get_contents();
+        ob_end_flush();
+        ?>
+    </div>
+    <hr>
     <div class="card-columns">
         <?php
-        $max = 50;
-        $page = $_GET['p']*1;
-        $pageNow = $page*$max;
-        $datas = $db->select("t_photos",'*',['LIMIT'=>[$pageNow,$max],'ORDER'=>['date_added'=>'DESC']]);
         foreach($datas as $data){
         ?><div class="card">
             <a href="<?=$data['baseUrl']?>" data-toggle="lightbox" data-gallery="google-gallery">
@@ -36,14 +68,12 @@ include "config.php";
         </div>
         <?php } ?>
     </div>
-<nav aria-label="Page navigation">
-    <ul class="pagination">
-        <?php if($page>0){?>
-        <li class="page-item"><a class="page-link" href="?p=<?=$page-1?>">Previous</a></li>
-        <?php } ?>
-        <li class="page-item"><a class="page-link" href="?p=<?=$page+1?>">Next</a></li>
-    </ul>
-</nav>
+    <hr>
+    <div>
+        <?=$pagination?>
+    </div>
+    <hr>
+    <br><br>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.4.0/js/bootstrap.min.js"></script>

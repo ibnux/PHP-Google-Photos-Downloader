@@ -13,7 +13,6 @@ require 'config.php';
 
 $jsoncredential = json_decode(file_get_contents('data/credentials.txt'),true);
 
-
 /**
  * Retrieves the user's albums, and renders them in a grid.
  */
@@ -42,12 +41,13 @@ if(!isset($fotos['mediaItems'])){
 echo "pageToken: ".$pageToken."\n";
 foreach ($fotos['mediaItems'] as $data) {
     if(!$db->has('t_photos',['id'=>$data['id']])){
+        //insert
         unset($data['contributorInfo']);
         echo $data['mimeType']."  ".$data['filename']."\n";
         $data['mediaMetadata'] = (is_array($data['mediaMetadata']))? json_encode($data['mediaMetadata']) : $data['mediaMetadata'];
         echo "wget ".$data['filename']."\n";
         $baseURL = $data['baseUrl'];
-        $filename = sha1($baseURL);
+        $filename = sha1($data['id']);
         $a = 'images/'.substr($filename,0,1);
         $b = substr($filename,1,1);
         if(strpos($data['mimeType'],"video")===false){
@@ -73,7 +73,41 @@ foreach ($fotos['mediaItems'] as $data) {
         $data['root_id'] = $db->get('t_photos','id',['hash'=>$data['hash']]);
         $db->insert('t_photos',$data);
     }else{
-        echo ".";
+        //update cek size
+        unset($data['contributorInfo']);
+        echo $data['mimeType']."  ".$data['filename']."\n";
+        $baseURL = $data['baseUrl'];
+        $filename = sha1($data['id']);
+        $a = 'images/'.substr($filename,0,1);
+        $b = substr($filename,1,1);
+        if(strpos($data['mimeType'],"video")===false){
+            $ext = "jpg";
+            $param = "=d";
+        }else{
+            $ext = "mp4";
+            $param = "=dv";
+        }
+        if(!file_exists($a)) mkdir($a);
+        if(!file_exists("$a/$b")) mkdir("$a/$b");
+        $filename = "$a/$b/".$filename.".$ext";
+        if(!file_exists($filename) || filesize($filename)<10000){
+            if(file_exists($filename))
+                echo ".filesize ".filesize($filename)."\n";
+            else echo "not exists\n";
+            $count = 0;
+            $data['hash'] = downloadImage($baseURL.$param,$filename);
+            echo ".hash ".$data['hash']."\n";
+            echo ".size ".filesize($filename)."\n";
+            if(!isCLI()){
+                echo "<img src=\"$filename\" width=\"256\">\n";
+            }
+            echo "\n";
+            //check duplicate who has same hash
+            $hash = $db->get('t_photos','id',['hash'=>$data['hash']]);
+            $db->update('t_photos',['baseUrl'=>$filename,'root_id'=>$hash,'hash'=>$hash],['id'=>$data['id']]);
+        }else{
+            echo ".";
+        }
     }
 }
 echo "\n";
@@ -83,9 +117,11 @@ if(isset($fotos['nextPageToken']) && !empty($fotos['nextPageToken'])){
     if(!isCLI()){
         echo '<meta http-equiv="refresh" content="3">';
     }else{
+        sleep(rand(1,10));
         goto ulang;
     }
 }else{
+    file_put_contents("data/page.token",'');
     echo "FINISH\n\n";
 }
 
@@ -116,6 +152,7 @@ $count = 0;
 
 function downloadImage($url,$name){
     global $count;
+    echo "wget ".$name."\n";
     set_time_limit(0);
     //This is the file where we save the    information
     $fp = fopen ($name, 'w+');
@@ -128,7 +165,8 @@ function downloadImage($url,$name){
     curl_exec($ch);
     curl_close($ch);
     fclose($fp);
-    if(filesize($name)<1){
+    //below 10kb is fail
+    if(filesize($name)<10000){
         if($count<5){
             $count++;
             echo "retry $count\n";
