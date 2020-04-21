@@ -106,7 +106,7 @@ foreach ($fotos['mediaItems'] as $data) {
             $hash = $db->get('t_photos','id',['hash'=>$data['hash']]);
             $db->update('t_photos',['baseUrl'=>$filename,'root_id'=>$hash,'hash'=>$hash],['id'=>$data['id']]);
         }else{
-            echo ".";
+            echo "exists\n";
         }
     }
 }
@@ -128,6 +128,7 @@ if(isset($fotos['nextPageToken']) && !empty($fotos['nextPageToken'])){
 //if token expired, we need to update new token
 function updateToken(){
     global $client_id ,$client_sc,$jsoncredential;
+    echo "update Token\n";
     $refresh_token = file_get_contents('data/refresh.token');
     $ch = curl_init('https://oauth2.googleapis.com/token');
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: x-www-form-urlencoded'));
