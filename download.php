@@ -112,6 +112,8 @@ foreach ($fotos['mediaItems'] as $data) {
                 $db->update('t_photos',['hash'=>$data['hash']],['id'=>$data['id']]);
                 echo "exists\n";
             }
+        }else{
+            echo "DELETED\n";
         }
     }
 }
