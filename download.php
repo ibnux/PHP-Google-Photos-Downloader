@@ -70,43 +70,48 @@ foreach ($fotos['mediaItems'] as $data) {
         }
         echo "\n";
         //check duplicate who has same hash
-        $data['root_id'] = $db->get('t_photos','id',['hash'=>$data['hash']]);
+        $hash = $db->get('t_photos','id',['AND'=>['hash'=>$data['hash'],'id[!]'=>$data['id']]]);
         $db->insert('t_photos',$data);
     }else{
-        //update cek size
-        unset($data['contributorInfo']);
-        echo $data['mimeType']."  ".$data['filename']."\n";
-        $baseURL = $data['baseUrl'];
-        $filename = sha1($data['id']);
-        $a = 'images/'.substr($filename,0,1);
-        $b = substr($filename,1,1);
-        if(strpos($data['mimeType'],"video")===false){
-            $ext = "jpg";
-            $param = "=d";
-        }else{
-            $ext = "mp4";
-            $param = "=dv";
-        }
-        if(!file_exists($a)) mkdir($a);
-        if(!file_exists("$a/$b")) mkdir("$a/$b");
-        $filename = "$a/$b/".$filename.".$ext";
-        if(!file_exists($filename) || filesize($filename)<10000){
-            if(file_exists($filename))
-                echo ".filesize ".filesize($filename)."\n";
-            else echo "not exists\n";
-            $count = 0;
-            $data['hash'] = downloadImage($baseURL.$param,$filename);
-            echo ".hash ".$data['hash']."\n";
-            echo ".size ".filesize($filename)."\n";
-            if(!isCLI()){
-                echo "<img src=\"$filename\" width=\"256\">\n";
+        //if not deleted
+        if(!($db->get('t_photos','baseUrl',['id'=>$data['id']])=='DELETED')){
+            //update cek size
+            unset($data['contributorInfo']);
+            echo $data['mimeType']."  ".$data['filename']."\n";
+            $baseURL = $data['baseUrl'];
+            $filename = sha1($data['id']);
+            $a = 'images/'.substr($filename,0,1);
+            $b = substr($filename,1,1);
+            if(strpos($data['mimeType'],"video")===false){
+                $ext = "jpg";
+                $param = "=d";
+            }else{
+                $ext = "mp4";
+                $param = "=dv";
             }
-            echo "\n";
-            //check duplicate who has same hash
-            $hash = $db->get('t_photos','id',['hash'=>$data['hash']]);
-            $db->update('t_photos',['baseUrl'=>$filename,'root_id'=>$hash,'hash'=>$hash],['id'=>$data['id']]);
-        }else{
-            echo "exists\n";
+            if(!file_exists($a)) mkdir($a);
+            if(!file_exists("$a/$b")) mkdir("$a/$b");
+            $filename = "$a/$b/".$filename.".$ext";
+            if(!file_exists($filename) || filesize($filename)<10000){
+                if(file_exists($filename))
+                    echo ".filesize ".filesize($filename)."\n";
+                else echo "not exists\n";
+                $count = 0;
+                $data['hash'] = downloadImage($baseURL.$param,$filename);
+                echo ".hash ".$data['hash']."\n";
+                echo ".size ".filesize($filename)."\n";
+                if(!isCLI()){
+                    echo "<img src=\"$filename\" width=\"256\">\n";
+                }
+                echo "\n";
+                //check duplicate who has same hash
+                $hash = $db->get('t_photos','id',['AND'=>['hash'=>$data['hash'],'id[!]'=>$data['id']]]);
+                $db->update('t_photos',['baseUrl'=>$filename,'root_id'=>$hash,'hash'=>$sha1],['id'=>$data['id']]);
+            }else{
+                $data['hash'] = sha1_file($filename);
+                $db->update('t_photos',['hash'=>$data['hash']],['id'=>$data['id']]);
+                echo "exists\n";
+            }
         }
     }
 }
